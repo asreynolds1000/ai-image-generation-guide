@@ -1,16 +1,23 @@
 # AI Person Image Generation Guide
 
-Last updated: April 2026
+Last updated: 2026.
 
-> **Ethics & Consent:** This guide is intended for use with subjects who have given explicit consent to AI image generation in their likeness. Do not use these techniques to generate images of people without their knowledge or permission. Respect each provider's acceptable use policies.
-
-**Note:** Ref count, prompt style, and Flash-vs-Pro findings based on single-subject testing (April 2026). Re-verify with new subjects.
+> **Ethics & Consent:** This guide is intended for professional, consented work -- generating polished portraits and headshots of subjects who have given explicit permission to create AI images in their likeness (professional headshots, team pages, marketing portraits, and similar). Do not use these techniques to generate images of people without their knowledge or permission. Respect each provider's acceptable use policies.
 
 ---
 
 ## Purpose
 
-Generate photorealistic AI images of a specific real person in new scenes, outfits, poses, or styles while preserving their identity. Covers the full workflow from collecting references through prompting, multi-era identity management, compositing into existing photos, and 4K upscaling.
+Generate photorealistic AI portraits of a specific real person -- new scenes, outfits, hairstyles, expressions, and poses -- while preserving their identity. Covers the full workflow from collecting references through prompting, compositing into existing photos, and 4K upscaling.
+
+## The likeness ceiling (read this first)
+
+Text-to-image generation *paints an approximation* of a face from your references -- it never reproduces a specific real face exactly. Better references and prompts raise the floor, but they don't cross this ceiling. So there are two layers:
+
+- **Composition layer (Gemini):** produces the pose, scene, outfit, hairstyle, and framing, with a face that's close.
+- **Identity layer (face swap):** when you need true likeness, generate the composition with Gemini and then swap the subject's *real* face onto it with an open-source face-swap tool (see "Face-swap for maximum likeness"). The swap transfers real face pixels, which prompting alone can't.
+
+If the goal is "looks exactly like them," plan on the swap step -- prompt-painting alone will disappoint on strict likeness. Strong, clean, straight-on reference photos are what raise the composition-layer floor and also serve as the swap source.
 
 ---
 
@@ -35,7 +42,7 @@ Gather 8-15 real photos of the subject. Prioritize variety:
 - Front-facing (clear, well-lit)
 - Three-quarter view (both sides if possible)
 - Profile/side view
-- Full body (establishes build and proportions)
+- Full length (for full-length portrait work)
 
 **Good to have:**
 - Different lighting conditions
@@ -49,7 +56,7 @@ Gather 8-15 real photos of the subject. Prioritize variety:
 - Photos where the subject is facing away from camera
 - Low resolution or heavily compressed images
 
-**Multi-era subjects:** If the subject's appearance has changed over time (weight, age, hair), collect separate photo sets per era. Each era needs its own identity assets (headshots, body profiles). Don't mix eras in a single ref set -- the model will average them.
+**Changed appearance over time:** If the subject's appearance has changed (age, hairstyle, glasses), collect separate photo sets per era and keep them in their own reference sets. Don't mix eras in a single ref set -- the model will average them.
 
 **Compression for API:** Two tiers depending on use:
 - **Identity refs** (face-critical): 1500px, quality 50. Face detail matters here.
@@ -79,7 +86,9 @@ Real photos have inconsistent lighting, backgrounds, and angles that confuse the
 6. Square 1:1 format, 2K resolution, low temperature (0.2)
 7. Use angle-matched refs per shot (profile refs for profiles, front refs for front, etc.)
 
-**3 identity refs, not 5-6.** More refs causes face averaging -- the model blends features across all inputs instead of anchoring to one face. Tested April 2026: 3 refs + 2 feature closeups consistently outperformed 5-6 identity refs.
+**3 identity refs, not 5-6.** More refs causes face averaging -- the model blends features across all inputs instead of anchoring to one face. 3 refs + 2 feature closeups consistently outperformed 5-6 identity refs.
+
+**Real photos are the identity authority -- AI headshots are supplementary.** These generated headshots are useful supporting refs (consistent lighting, neutral angles), but the primary anchor in any ref set should be a clean real photo, and the face-swap source (see "Face-swap for maximum likeness") must always be a real photo. Never build a subject's identity solely from AI-generated assets -- generating from a generated image is a copy-of-a-copy and drifts.
 
 **Let Gemini write the prompts.** Send the real photos to a Gemini text model (Flash) and ask it to describe the subject's specific face for use in generation prompts. The model identifies precise features (face shape, eye depth, lip shape, complexion) better than manual description. Fix any beautification in its output (it tends to describe teeth as "straight" and "white" even when they're not).
 
@@ -91,24 +100,21 @@ Real photos have inconsistent lighting, backgrounds, and angles that confuse the
 
 ---
 
-## Step 3: Generate Body Profiles (Optional)
+## Step 3: Body Reference for Full-Length Portraits (Optional)
 
-When body shape accuracy matters in the output, generate controlled body silhouettes as reference images.
+Only needed when you're producing full-length portraits rather than headshots or waist-up shots. A set of neutral body-reference angles keeps the subject consistent across a batch.
 
 **Process:**
-1. Send 4-6 full-body real photos to Gemini
-2. Ask for body refs at 4 angles: front, side, three-quarter, back
-3. Fitted neutral grey athletic wear (tank + leggings) that shows body shape
-4. Neutral grey studio background, even lighting, barefoot
-5. 9:16 format, 2K resolution
+1. Send 4-6 full-length real photos to Gemini
+2. Ask for reference angles: front, side, three-quarter, back
+3. Neutral, fitted attire against a neutral grey studio background, even lighting
+4. 9:16 format, 2K resolution
 
 **Two versions per angle:**
-- **Headless** (cropped at collarbone): Prevents face contamination when used as a body-only ref. Like a dressmaker's mannequin.
-- **With face** (full head-to-toe): Preserves how the face relates to the body. Use era-matched face refs.
+- **Headless** (cropped at collarbone): a neutral reference for full-length framing without pulling the face from it.
+- **With face** (full length): keeps the face consistent with the rest of the figure. Use era-matched face refs.
 
-**Be specific about proportions.** Gemini tends to default toward average builds. Describe the subject's actual proportions explicitly rather than using vague terms like "fuller build."
-
-**Every variant needs its own identity assets.** Skipping the identity pipeline (headshots + body profiles) for a variant and just extrapolating from a single image produces noticeably weaker results. The model needs dedicated multi-angle identity refs to maintain consistency across a batch.
+**Each variant needs its own identity assets.** Extrapolating a full-length look from a single image produces weaker results than dedicated multi-angle references.
 
 ---
 
@@ -135,7 +141,7 @@ For hairstyles and other style attributes, use pre-built mannequin references fr
 
 **Quick usage:** Select the angle-matched mannequin view for the target pose, place it LAST in image order, include the subject's texture swatch for color, add "make it organic and natural, not stiff."
 
-**Current library:** 75 styles (4 angles each), plus 169 styled looks. See `STYLE-LIBRARY.md` for the full catalog and how to build your own.
+**Current library:** 62 styles (4 angles each), plus 169 styled looks. See `STYLE-LIBRARY.md` for the full catalog and how to build your own.
 
 ---
 
@@ -228,6 +234,8 @@ For looks with hairstyle mannequins, drop teeth closeup and add mannequin as IMA
 
 **Angle matching:** For profile outputs, include profile headshots. For front-facing, include front headshots. For back-turned-head poses, include profile + 3/4 views.
 
+**Always include a straight-on frontal anchor in every angle's ref set** -- even for 3/4 and profile outputs. Feeding only same-angle refs (e.g. three 3/4 shots) gives the model no core geometry to lock onto, so it averages a generic face. The recipe per angle: one frontal anchor + one angle-matched ref + feature closeups. In testing, the only angles that drifted were 3/4s and profiles missing a frontal anchor; adding one fixed them.
+
 ### Prompt Structure
 
 **Refs carry identity, prompts carry scene.** Heavy identity blocks with negative constraints ("NOT narrow", "NOT angular") don't improve scores and can cause overcorrection. The reference images do the identity work. The prompt should describe what you want to see.
@@ -276,9 +284,9 @@ A [framing] portrait of [Name], [pose/angle]. [Expression].
 | **Expressions** | Real photo (expression-matched) | Real photo (face closeup) | Real photo (expression-matched) | Nose closeup | Teeth closeup |
 | **Looks (single-pass)** | Real photo (angle-matched) | AI headshot (pose-matched) | AI expression (expression-matched) | Nose closeup | Teeth closeup |
 | **Looks (pass 2 hair swap)** | Pass 1 output (BASE) | Real photo | AI expression | Hairstyle mannequin | -- |
-| **Showcase / batch** | AI headshot (pose-matched) | AI expression | Body profile | Hair texture swatch | Hairstyle mannequin |
+| **Showcase / batch** | AI headshot (pose-matched) | AI expression | Body reference | Hair texture swatch | Hairstyle mannequin |
 
-**Showcase / batch generation requires all 5 refs.** Dropping the body profile produces wrong body proportions. Dropping the texture swatch produces wrong hair color (model copies the mannequin's brown instead of the subject's color). Both failures confirmed April 2026. For full-body showcase images, use 9:16 with explicit "head to feet, FULL BODY VISIBLE" language -- the model crops at the waist without it.
+**Showcase / batch generation requires all 5 refs.** Dropping the body reference makes the figure inconsistent across the batch. Dropping the texture swatch produces wrong hair color (model copies the mannequin's brown instead of the subject's color). For full-length showcase images, use 9:16 with explicit "head to feet, full length" language -- the model crops at the waist without it.
 
 **Match refs to output angle and expression.** Profile refs for profile outputs, laughing refs for laughing expressions, etc. This is the single biggest factor in ref selection quality.
 
@@ -294,7 +302,7 @@ Without these, the model defaults to stylized rendering -- elements curling up, 
 
 ### When to Drop the Style Reference
 
-For stubborn identity failures or dramatic body size changes, **describe the scene entirely in text** and skip the style reference image. This eliminates face contamination completely. Works best when the scene can be described clearly in words (specific pose, outfit, setting).
+For stubborn identity failures, **describe the scene entirely in text** and skip the style reference image. This eliminates face contamination completely. Works best when the scene can be described clearly in words (specific pose, outfit, setting).
 
 ---
 
@@ -306,7 +314,7 @@ The most reliable pattern for dramatic hairstyle changes and complex requirement
 
 - Dramatic hairstyle changes (braids, curls, updos, bobs -- anything that significantly changes face framing)
 - Any library hairstyle that drifted on first pass
-- Complex transformations combining multiple style changes
+- Complex changes combining multiple style elements (hair + outfit)
 - Identity fix-ups on existing generated images
 
 ### Standard Two-Pass: Identity First, Then Hair Swap
@@ -376,18 +384,36 @@ More hair framing the face = better identity scores. The model uses hair as part
 
 ---
 
+## Face-Swap for Maximum Likeness (FaceFusion)
+
+When prompting and references can't get the face across the likeness ceiling -- or when you simply want the most faithful result -- add a face-swap step. Generate the composition with Gemini (pose, outfit, hairstyle, expression, framing), then swap the subject's real face onto it. The swap transfers actual face pixels from a real photo, reaching a likeness prompt-painting cannot.
+
+**Tool:** [FaceFusion](https://github.com/facefusion/facefusion), an open-source face-swap tool. Run it locally after the Gemini pass.
+
+**Pipeline:**
+1. Generate the composition image with Gemini (the *composition layer*).
+2. Pick a clean, straight-on **real** photo of the subject as the swap source (never an AI-generated image).
+3. Run FaceFusion to swap the source face onto the Gemini output (the *target*), with a face enhancer enabled for detail.
+4. Review; if the swap looks pasted, choose a source photo whose angle better matches the target's head angle.
+
+**When it's most needed:** short cuts, profiles, or partially occluded faces -- the cases where the composition layer's likeness is weakest. With strong, high-res, straight-on reference photos, the Gemini pass alone is often enough and no swap is needed.
+
+The swap source must be a real photo, angle-matched to the target's head angle. This is the identity layer; the Gemini pass is the composition layer.
+
+---
+
 ## Step 7: Composites (Subject into Existing Photos)
 
 Put the subject into an existing photograph, replacing the original model.
 
 **Process:**
 1. Select angle-matched headshots for the target pose
-2. Include body profile if body accuracy matters
+2. Include a body reference for full-length composites
 3. Include texture swatch if preserving natural coloring
 4. Source photo goes LAST
 5. Prompt: "Recreate IMAGE X exactly -- same pose, framing, outfit, setting, lighting -- but with [Name] as the subject."
 
-**When subject proportions differ from the style reference:** Drop the source photo entirely. Describe the scene, pose, outfit, and setting in text only. The source photo creates compositing artifacts when proportions don't match.
+**When the source photo's scale or framing doesn't match the subject:** Drop the source photo entirely and describe the scene, pose, outfit, and setting in text only. A mismatched source photo creates compositing artifacts. For true likeness on a composite, run the face-swap step afterward.
 
 **Multi-era composites:** Generate the same source photo 2-3 times using different era identity assets. Produces side-by-side comparison sets showing the same scene at different points in life.
 
@@ -448,33 +474,32 @@ Mannequin hairstyle references are inherently flat. The model follows the manneq
 - Use frame-relative language: "Part line on LEFT of the image" not "part on her left."
 - If the model keeps getting it wrong, include a correct mannequin from another style as IMAGE 1 labeled "match the part side from this image."
 
-### Body proportions wrong
-- Include a body profile reference image
-- Be specific about proportions rather than using vague descriptors
-- Gemini tends to default toward average builds without explicit guidance
-- **Iterate with targeted closeups.** First-attempt body profiles often underrepresent specific features. Send closeup real photos of the area that's wrong alongside the full-body refs on the next attempt.
+### Figure inconsistent in full-length shots
+- Include a body-reference image (Step 3) so the model has full-length geometry to match
+- Use 9:16 framing with explicit "full length" language
+- If the first attempt is off, add angle-matched full-length real photos on the next pass
 
-### Mannequin creation from concept images (Grok defacing)
-- When you have a good concept image (from Grok or other source) but need a mannequin version, ask Grok to "remove the face -- replace with smooth featureless blank surface, replace background with neutral grey." $0.02, ~5 seconds. Much faster than regenerating from scratch.
-- Works well for body transformation profiles and fantasy hairstyles where the concept is right but you need the face removed for compositing.
+### Turning a concept image into a faceless mannequin
+- When you have a good concept image but need a faceless mannequin version, ask an image editor (e.g. Grok) to "remove the face -- replace with smooth featureless blank surface, replace background with neutral grey." Fast and cheap. Much faster than regenerating from scratch.
+- Useful when the hairstyle concept is right but you need the face removed for a clean style reference.
 
 ### Element disconnected from body
 - Add "one single continuous flow from [origin] to [destination], no breaks, no cuts, no disconnected sections"
 - May need 2-3 attempts with increasingly explicit language about continuity
 
 ### Compositing/pasting artifacts
-- If the subject's proportions differ significantly from a style reference, the model may paste the face onto the reference body. Drop the source photo and describe the scene in text instead.
-- Use the no-style-ref approach when proportions don't match.
+- If a style reference's scale or framing differs significantly from the subject, the model may paste the face on awkwardly. Drop the source photo and describe the scene in text instead.
+- Use the no-style-ref approach when the source doesn't match, and run the face-swap step for a clean identity.
 
 ### Framing ignores full-body instruction
 - Use 9:16 aspect ratio (gives vertical space)
 - Make framing its own emphatic block with "FAILED" language
 - Two-pass: generate normally, then reframe in a second call
 
-### Content safety blocks
-- Try `gemini-3.1-flash-image-preview` (looser threshold)
-- Genericize the most revealing element
-- **Content safety policies may apply differently to AI-generated vs. real photos.** Be aware that providers have different thresholds for different input types. Check each provider's acceptable use policy for your specific use case.
+### Content safety false positives
+- Try the preview model variant (looser threshold)
+- Rephrase or genericize whatever element triggered the flag
+- **Content safety policies may apply differently to AI-generated vs. real photos.** Providers have different thresholds for different input types. Check each provider's acceptable use policy for your specific use case.
 
 ---
 
@@ -512,7 +537,7 @@ Grok handles AI-generated images well for outfit and style edits. See the xAI AP
 - 200K TPM
 
 **Planning large batches:**
-- A full identity asset set (6 headshots + 6 textures + 8 body profiles + 5 expressions + 28 hairstyle mannequins + 8 clothing mannequins) = ~61 requests
+- A full identity asset set (6 headshots + 6 textures + 8 body references + 5 expressions + 28 hairstyle mannequins + 8 clothing mannequins) = ~61 requests
 - For batches over ~50 images: run sequentially with 2-3s delays, or split across Flash + Pro
 - Running 3 parallel scripts causes 429 errors or silent stalls -- max 2 parallel (confirmed on both Pro and Flash, April 2026)
 
@@ -530,7 +555,7 @@ Grok handles AI-generated images well for outfit and style edits. See the xAI AP
 | Task | Model | Why |
 |------|-------|-----|
 | Identity headshots | Flash | Comparable identity fidelity, 4x daily rate limit |
-| Body profiles | Flash | Face is small at full-body scale |
+| Body references | Flash | Face is small at full-length scale |
 | Expression profiles | Flash | Strong multi-constraint adherence |
 | Final batch generation | Flash | Identity comparable, 1000 RPD headroom |
 | Hairstyle mannequins | Flash | No face to preserve |
@@ -568,7 +593,7 @@ Full identity asset pipeline (tested April 2026):
 1. **Collect 15-25 reference photos** (~10 minutes). Include professional shots AND casual. Group by hairstyle and expression.
 2. **Compress** identity refs to 1500px, quality 50 (~150-250KB). Non-identity refs to 1200px, quality 35 (~50-100KB). See Step 1.
 3. **Generate identity headshots** on Flash -- 6 angles, hair pulled back (~5 minutes). Verify part side, verify likeness. Fix 3/4 angles with flipped-pose-reference technique if needed.
-4. **Generate body profiles** on Flash -- 4 angles, faced + headless crops (~5 minutes)
+4. **Generate body references** on Flash -- 4 angles, faced + headless crops (~5 minutes)
 5. **Generate texture swatches** on Flash -- 6 swatches covering color variations (~3 minutes)
 6. **Generate expression profiles** on Flash -- 4-5 expressions, grouped by matching refs (~5 minutes)
 7. **Generate subject-specific hairstyle mannequins** on Flash -- 4-7 styles from real refs, verify part side on each (~15 minutes)
@@ -596,7 +621,6 @@ Full identity asset pipeline (tested April 2026):
 | Batch of 35 final images (mix of 1-pass and 2-pass) | Pro | ~$2.50-4.00 |
 | Complete subject pipeline (assets + finals) | Pro+Flash | ~$5-7 |
 | 4K upscale batch of 22 images | Pro | ~$1.50-2.50 |
-| Veo morph video (Standard, ~8s) | Veo | ~$1.60 |
 | Flash image (5 refs, 2K) | Flash | ~$0.01-0.03 |
 | Grok single edit | Grok | $0.02 |
 | Grok batch (21 edits) | Grok | ~$0.42 |
@@ -612,7 +636,7 @@ Full identity asset pipeline (tested April 2026):
 3. [ ] Verify hair part side from professional (non-selfie) photos
 4. [ ] Generate 6 AI headshots on Flash (front, 3/4 L/R, profile L/R, above). Fix 3/4 angles if needed.
 5. [ ] Verify headshots look like the subject
-6. [ ] Generate body profiles on Flash (4 angles, headless + faced)
+6. [ ] Generate body references on Flash (4 angles, headless + faced)
 7. [ ] Generate 6 texture swatches on Flash (straight, wavy, curly + dark/highlight/auburn variations)
 8. [ ] Generate 4-5 expression profiles on Flash (group refs by expression, hair down)
 9. [ ] Generate 4-7 subject-specific hairstyle mannequins on Flash (from real refs, verify part side)

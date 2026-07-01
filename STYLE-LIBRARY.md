@@ -1,6 +1,6 @@
 # AI Style Library Guide
 
-Last updated: April 2026
+Last updated: 2026.
 
 ---
 
@@ -112,6 +112,16 @@ For complex or unusual styles, the construction description is critical. Structu
 
 ---
 
+## Controlling Hair Length
+
+Length is the hardest hairstyle attribute to control, and the intuitive fix doesn't work:
+
+- **A length chart or reference image does NOT control output length.** Feeding a "how long is the hair" diagram gets ignored (tested across multiple Gemini and OpenAI image models).
+- **Forceful, explicit anatomical endpoint phrasing in the prompt is what works.** Name where the hair ends on the body: "ends at the collarbone," "reaches mid-back," "stops at the waist -- do NOT stop at the shoulder." The more specific the landmark, the better.
+- **The longest styles need two extra levers:** language that the hair pools or coils at the ends, and camera framing pulled back far enough to show the full length. Without the pulled-back framing the model crops before the hair ends.
+
+---
+
 ## Using the Library
 
 When generating an image of a person with a library hairstyle:
@@ -151,7 +161,7 @@ A typical showcase batch: 10 styles x 1 subject = 10 images.
 **Per image, 5 inputs:**
 1. Angle-matched headshot
 2. Second headshot (different angle for triangulation)
-3. Body profile
+3. Body reference
 4. Hair texture swatch
 5. Mannequin style reference (LAST)
 
@@ -163,16 +173,14 @@ At ~$0.02/image on Flash, a 10-image showcase costs ~$0.20 and takes ~5 minutes.
 
 ## Current Library
 
-75 styles (most in 4 angles), plus a 169-image Hair Looks library of real-world styled looks organized by cut, length, color, and texture. See [library/INDEX.md](library/INDEX.md) for the styles catalog and [library/looks/INDEX.md](library/looks/INDEX.md) for looks. Browse the [library/](library/) folder for all images.
+62 styles (most in 4 angles), plus a 169-image Hair Looks library of real-world styled looks organized by cut, length, color, and texture. See [library/INDEX.md](library/INDEX.md) for the styles catalog and [library/looks/INDEX.md](library/looks/INDEX.md) for looks. Browse the [library/](library/) folder for all images.
 
 | Category | Count |
 |----------|-------|
 | Braids | 6 |
 | Editorial | 7 |
-| Fantasy | 10 |
 | Flowing | 18 |
 | Ponytails & Half-Up | 8 |
-| Post-Apocalyptic | 3 |
 | Short | 13 |
 | Ultra-Long | 1 |
 | Updos | 9 |
@@ -218,5 +226,5 @@ The principle is the same: isolate the style attribute on a neutral form so it c
 |------|-------|------|
 | Single anchor generation | Flash | ~$0.02 |
 | Full style entry (4 angles) | Flash | ~$0.08 |
-| Full library (75 styles x 4 angles) | Flash | ~$6.00 |
+| Full library (62 styles x 4 angles) | Flash | ~$5.00 |
 | 10-image showcase per subject | Flash | ~$0.20 |
